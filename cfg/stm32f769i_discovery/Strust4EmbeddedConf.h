@@ -13,6 +13,10 @@
 #define BLINKER_THD_STACK_SIZE          1024//512
 #define LCD_THD_STACK_SIZE             	512
 #define AUDIO_THD_WA_STACK_SIZE   		0x2000
+
+#ifndef S4E_USE_SDCARD
+#define S4E_USE_SDCARD 			1
+#endif
 #ifndef USE_LCD_TFT
 #define USE_LCD_TFT 			1
 #endif
