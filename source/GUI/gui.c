@@ -299,6 +299,7 @@ void updateLCDTFTStatus(void){
 	gwinSetText(gHandles[STATUS_LABEL_GH_NDX], getAPStateName(pAudioPlayerDriverITF->state), TRUE);
 	gwinSetText(gHandles[STATUS_GH_NDX], buffer, TRUE);
 	chsnprintf(buffer, sizeof(buffer),"Tk:%d T:%d %d:%d ",pAudioPlayerDriverITF->pAudioFileInfo->trackID, ++pAudioPlayerDriverITF->pAudioFileInfo->totalSecondsPlayed, forMinutes,remainingSec);
+	char *status = pAudioPlayerDriverITF->errorMsg != NULL?pAudioPlayerDriverITF->errorMsg:buffer;
 	gwinSetText(gHandles[TRACK_GH_NDX], buffer, TRUE);
 
 	return;
@@ -363,7 +364,8 @@ uint8_t handleButtonClicks(GEvent  *pe){
 static LinkedListElement* populateTracksList(LinkedListElement* pItem, void *arg){(void)arg;
 	AudioFileInfo_TypeDef *pAudioFileInfo = (AudioFileInfo_TypeDef*)pItem->value;
 
-	gwinListAddItemWithParam(gHandles[TRACKS_LIST_GH_NDX], pAudioFileInfo->filename, TRUE,(uint32_t)pAudioFileInfo->trackKey);
+	char *titleToUse = (pAudioFileInfo->title[0] == 0)?pAudioFileInfo->filename:pAudioFileInfo->title;
+	gwinListAddItemWithParam(gHandles[TRACKS_LIST_GH_NDX], titleToUse, TRUE,(uint32_t)pAudioFileInfo->trackKey);
 	return NULL;
 }
 void onTrackStartedPlaying(void){

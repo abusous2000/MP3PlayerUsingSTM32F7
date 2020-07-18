@@ -33,6 +33,8 @@
   ******************************************************************************
   */
 
+#include "Strust4EmbeddedConf.h"
+#ifdef INCLUDE_WM8994
 /* Includes ------------------------------------------------------------------*/
 #include "wm8994.h"
 
@@ -1113,8 +1115,7 @@ uint16_t FT5336_read_word(uint8_t reg){
 #define FT6x06_SLAVE_ADDR 		(0x54 >> 1)
 #define FT6x06_SLAVE_ADDR_A02  (0x70 >> 1)
 
-uint16_t TS_IO_ReadMultiple2(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, uint16_t Length)
-{
+uint16_t TS_IO_ReadMultiple2(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, uint16_t Length){(void)Addr;
 
 	uint32_t result = 0;
 	uint8_t  txbuf[1];
@@ -1183,3 +1184,4 @@ uint16_t FT6x06_read_word(uint8_t reg){
   */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+#endif

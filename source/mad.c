@@ -177,10 +177,15 @@ enum mad_flow output(void *data,   struct mad_header const *header,  struct mad_
 	  curentlyPlayingMadInfo->waitAny = true;
       eventmask_t  em = chEvtWaitAny(EVENT_MASK(COMPLETE_EVENT) | EVENT_MASK(HALFWAY_EVENT));
       curentlyPlayingMadInfo->waitAny = false;
+	  #ifdef BOARD_ST_STM32F4_DISCOVERY
+      //if 0x80000.. implies switch memory bank in the double buffer mode.  if sets 19th bit implies use memory bank #1
+      ndx = 0;//(SPID3.dmatx->stream->CR & 0x80000)?0: MP3_BUFF_SIZE/2;
+      #else
       //1st - Invalide the memory that we have used
 //      cacheBufferInvalidate(&wave_buf[ndx], sizeof (wave_buf) / (2*sizeof (adcsample_t)));
       //2nd - Set ndx halfway when the half way callback notification comes from DMA's callback (see saicallback())
       ndx =  em & EVENT_MASK(HALFWAY_EVENT)? MP3_BUFF_SIZE/2: 0;
+      #endif
   }
   uint16_t *output=&wave_buf[ndx];
   while (nsamples--) {
@@ -220,6 +225,9 @@ enum mad_flow error(void *data, struct mad_stream *stream, struct mad_frame *fra
   return rc;
 }
 
+
+
+
 /*
  * This is the function called by main() above to perform all the decoding.
  * It instantiates a decoder object and configures it with the input,
@@ -228,8 +236,6 @@ enum mad_flow error(void *data, struct mad_stream *stream, struct mad_frame *fra
  * MAD_FLOW_STOP (to stop decoding) or MAD_FLOW_BREAK (to stop decoding and
  * signal an error).
  */
-
-
 int decodeMP3File(AudioPlayerDriverITF_Typedef  *pmadInfo)
 {
   int result,i;

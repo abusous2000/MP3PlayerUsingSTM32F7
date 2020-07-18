@@ -5,35 +5,36 @@
 #include "PotReader.h"
 #include "audio.h"
 #include "AudioPlayerThd.h"
-#include "wm8994.h"
+#define ERR_MSG_UNABLE_TO_INIT_CODEC    "****ERROR: Unable to Init Codec\r\n"
+#define ERR_MSG_INAVLID_DEVICE_ID       "****ERROR: Invalid Codec Device ID\r\n"
 
 extern AudioPlayerDriverITF_Typedef	*pAudioPlayerDriverITF;
 thread_t                        	*libMadThd;
+static thread_reference_t   playerThdRef = NULL;
 
+static void sendErrorAndSuspendThd(char *errorMsg){
+	  pAudioPlayerDriverITF->errorMsg = errorMsg;
+	  dbgprintf(ERR_MSG_UNABLE_TO_INIT_CODEC);
+	  chSysLock();
+	  chThdSuspendS(&playerThdRef);
+	  chSysUnlock();
+
+}
 static THD_WORKING_AREA(waAudioPlayerThd, AUDIO_THD_WA_STACK_SIZE);// Min. WA is 0x2000 for libmad to work, else it will crash
-static THD_FUNCTION(AudioPlayerThd, arg) {
-  (void)arg;
+static THD_FUNCTION(AudioPlayerThd, arg) {(void)arg;
   chRegSetThreadName("AudioPlayerThd");
   CodecDriverITF_Typedef        *pCodecDriverITF = pAudioPlayerDriverITF->pCodecDriverITF;
   SDCardDriverITF_Typedef  	    *pSDCardDriverITF= pAudioPlayerDriverITF->pSDCardDriverITF;
 
   libMadThd=chThdGetSelfX();
-  if ( pSDCardDriverITF->init == NULL )
-	  pSDCardDriverITF = getSDCardDriver();
   pSDCardDriverITF->init(pSDCardDriverITF);
+  if(0 != pCodecDriverITF->Init(AUDIO_I2C_ADDRESS, OUTPUT_DEVICE_HEADPHONE, DEFAULT_VOLUME, AUDIO_FREQUENCY_192K))
+	  sendErrorAndSuspendThd(ERR_MSG_UNABLE_TO_INIT_CODEC);
   uint32_t deviceID = pCodecDriverITF->ReadID(AUDIO_I2C_ADDRESS);
-  deviceID = pCodecDriverITF->ReadID(AUDIO_I2C_ADDRESS);
-  pCodecDriverITF->Reset(AUDIO_I2C_ADDRESS);
-  if ( WM8994_ID != deviceID ){
-	  chSysHalt("Invalid device ID");
-  }
-  pCodecDriverITF->Reset(AUDIO_I2C_ADDRESS);
-  if(0 != pCodecDriverITF->Init(AUDIO_I2C_ADDRESS, OUTPUT_DEVICE_HEADPHONE, DEFAULT_VOLUME, AUDIO_FREQUENCY_192K)){
-	  chSysHalt("Unable to Init Codec");
-  }
-  if(0 != pCodecDriverITF->Play(AUDIO_I2C_ADDRESS,NULL,0) ){
-      chSysHalt("Unable to Play Codec");
-  }
+  if ( CODEC_DEVISE_ADDRESS != deviceID )
+	  sendErrorAndSuspendThd(ERR_MSG_INAVLID_DEVICE_ID);
+
+  pCodecDriverITF->Play(AUDIO_I2C_ADDRESS,NULL,0);
   while(true){
       FRESULT err = pSDCardDriverITF->mount(pSDCardDriverITF);
       while(err == FR_OK){
@@ -45,8 +46,9 @@ static THD_FUNCTION(AudioPlayerThd, arg) {
           if ( err == FR_OK){
         	    LinkedListIterator iterator = emlist_iterator(pAudioPlayerDriverITF->audioFileList);
         	    LinkedListElement* candidate = NULL;
-
+				#if S4E_USE_MQTT != 0
         	    sendJSONTracksDropdown();
+				#endif
     	    	while(err == FR_OK && (candidate = emlist_iterator_next(&iterator)) != NULL) {
 
         	    	err=playAudioFile((AudioFileInfo_TypeDef*)candidate->value);
@@ -74,8 +76,10 @@ static THD_FUNCTION(AudioPlayerThd, arg) {
       pSDCardDriverITF->disconnect(pSDCardDriverITF);
       emlist_destroy(pAudioPlayerDriverITF->audioFileList,true);
       pAudioPlayerDriverITF->audioFileList = NULL;
-      if ( err != FR_OK)
+      if ( err != FR_OK){
     	  chThdSleepMilliseconds(1550);
+    	  pSDCardDriverITF->init(pSDCardDriverITF);
+      }
    }
 }
 

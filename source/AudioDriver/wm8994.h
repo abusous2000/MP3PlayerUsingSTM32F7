@@ -35,6 +35,9 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
+#include "Strust4EmbeddedConf.h"
+#ifdef INCLUDE_WM8994
+
 #ifndef __WM8994_H
 #define __WM8994_H
 #include "ch.h"
@@ -142,6 +145,10 @@
 /*------------------------------------------------------------------------------
                            Audio Codec functions 
 ------------------------------------------------------------------------------*/
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 /* High Layer codec functions */
 uint32_t wm8994_Init(uint16_t DeviceAddr, uint16_t OutputInputDevice, uint8_t Volume, uint32_t AudioFreq);
 void     wm8994_DeInit(void);
@@ -161,12 +168,16 @@ void    AUDIO_IO_DeInit(void);
 void    AUDIO_IO_Write(uint8_t Addr, uint16_t Reg, uint16_t Value);
 uint8_t AUDIO_IO_Read(uint8_t Addr, uint16_t Reg);
 void    AUDIO_IO_Delay(uint32_t Delay);
-
+#ifdef __cplusplus
+ }
+#endif
 /* Audio driver structure */
 //extern CodecDriverITF_TypeDef   wm8994_drv;
 
 #endif /* __WM8994_H */
 
+
+#endif
 /**
   * @}
   */ 

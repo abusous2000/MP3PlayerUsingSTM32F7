@@ -11,10 +11,11 @@
 #include "ActionEvents.h"
 #include "audio.h"
 #include "gui.h"
+#include "ssd1306.h"
 
 extern AudioPlayerDriverITF_Typedef	*pAudioPlayerDriverITF;
 void updateLCD(void){
-#if S4E_USE_SSD1306_LCD == 1
+#if S4E_USE_SSD1306_LCD != 0
    int   forMinutes      = pAudioPlayerDriverITF->pAudioFileInfo->secondsRemaining / 60;
    int   remainingSec    = pAudioPlayerDriverITF->pAudioFileInfo->secondsRemaining % 60;
 
@@ -32,7 +33,7 @@ void updateLCD(void){
    LCD_Display_String(buffer1,44, false);
    LCD_Display_Update();
 #endif
-#if USE_LCD_TFT == 1
+#if USE_LCD_TFT != 0
    updateLCDTFTStatus();
 #endif
 
@@ -47,7 +48,7 @@ int32_t updateWifiHtmlView(ActionEvent_Typedef 	*pActionEvent){(void)pActionEven
    dbgprintf("***sent WifiModule msg to refresh its config properties\r\n");
    updateLCD();
 
-#if S4E_USE_SSD1306_LCD == 1
+#if S4E_USE_SSD1306_LCD != 0
    fillScreenRow(SSD1306_COLOR_BLACK,5);
    LCD_Display_String("Updated Wifi",60, false);
 #endif

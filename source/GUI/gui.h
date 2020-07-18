@@ -6,7 +6,7 @@
 
 #ifndef _S4E_GUI_H_
 #define _S4E_GUI_H_
-#if USE_LCD_TFT == 1
+#if USE_LCD_TFT != 0
 #include "gfx.h"
 
 // Widget groups

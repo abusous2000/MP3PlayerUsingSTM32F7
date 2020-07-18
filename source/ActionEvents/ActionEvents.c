@@ -42,7 +42,7 @@ static int32_t toggleMute(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent
 	pAudioPlayerDriverITF->pCodecDriverITF->SetMute(AUDIO_I2C_ADDRESS,mute);
 	pAudioPlayerDriverITF->state =  mute?AP_PLAYING_AND_MUTE:AP_PLAYING;
 
-	#if USE_LCD_TFT == 1
+	#if USE_LCD_TFT != 0
 	checkboxMute(mute);
 	#endif
 
@@ -86,7 +86,7 @@ static int32_t togglePausePlay(ActionEvent_Typedef 	*pActionEvent){(void)pAction
   }
   else
       dbgprintf("***AE is ignored since player isn't playing....%d,%d\r\n",pause,pAudioPlayerDriverITF->actionEventEnum);
-  #if USE_LCD_TFT == 1
+  #if USE_LCD_TFT!= 0
   if ( pActionEvent != NULL )
 	  checkboxPause(pause);
   #endif
@@ -99,7 +99,7 @@ static int32_t setVolume(ActionEvent_Typedef   *pActionEvent){(void)pActionEvent
    if ( pAudioPlayerDriverITF->pCodecDriverITF->SetVolume(AUDIO_I2C_ADDRESS,newVolume) )
       dbgprintf("Vol Down I2C Failed\r\n");
    volume = newVolume;
-   #if USE_LCD_TFT == 1
+   #if USE_LCD_TFT != 0
    if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_MQTT) == 0 )
 		slideVolumeSet(volume);
    #endif
@@ -179,7 +179,7 @@ int32_t repositionToTrack(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent
 }
 
 int32_t setRGBLED(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
-#if S4E_USE_RGB == 1
+#if S4E_USE_RGB != 0
    if ( pActionEvent->u.pData != NULL){
        char *strRed 	= strtok(pActionEvent->u.pData,"|");
        char *strGreen 	= strtok(NULL,"|");
@@ -200,13 +200,13 @@ int32_t setRGBLED(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
    return MSG_OK;
 }
 static int32_t loadSysProperties(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
-#if S4E_USE_WIFI_MODULE_THD == 1
+#if S4E_USE_WIFI_MODULE_THD != 0
 	sendGetPropertiesMsgToWifiModule(PROPERTIES_HOST,PROPERTIES_URL,PROPERTIES_FP);
 #endif
    return MSG_OK;
 }
 static int32_t updateWifiHtml(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
-#if S4E_USE_WIFI_MODULE_THD == 1
+#if S4E_USE_WIFI_MODULE_THD != 0
    chThdSleepMilliseconds(5000);
    initWifiModuleServer();
 #endif
@@ -215,7 +215,7 @@ static int32_t updateWifiHtml(ActionEvent_Typedef 	*pActionEvent){(void)pActionE
 
 static int32_t newHTMLLoaded(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
     dbgprintf("newHTMLLoaded\r\n");
-#if S4E_USE_RGB == 1
+#if S4E_USE_RGB != 0
     setColorRGB(0, 0, 255, 0);
 #endif
     //A good example by trigger another AE from inside another, but it will be executed asynchronously

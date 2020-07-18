@@ -8,6 +8,7 @@
 #ifndef CFG_STRUST4EMBEDDEDCONF_H_
 #define CFG_STRUST4EMBEDDEDCONF_H_
 
+#define INCLUDE_WM8994                  1
 //#define MAX_ACTION_EVENTS             6
 #define BLINKER_THD_STACK_SIZE          768//1024//512
 #define LCD_THD_STACK_SIZE             	512
@@ -20,38 +21,53 @@
 #ifndef USE_LCD_TFT
 #define USE_LCD_TFT 			1
 #endif
+
 #ifndef S4E_USE_BLINKER_THD
 #define S4E_USE_BLINKER_THD     1
 #endif
+
 #ifndef S4E_USE_WIFI_MODULE_THD
 #define S4E_USE_WIFI_MODULE_THD 0
 #endif
+
 #ifndef S4E_USE_SSD1306_LCD
 #define S4E_USE_SSD1306_LCD     0
 #endif
+
+#ifndef S4E_USE_JOYSTICK
+#define S4E_USE_JOYSTICK        0
+#endif
+
 #ifndef S4E_USE_POT
 #define S4E_USE_POT             0
 #endif
+
 #ifndef S4E_USE_PWM
 #define S4E_USE_PWM             0
 #endif
+
 #ifndef S4E_USE_RGB
 #define S4E_USE_RGB             1
 #endif
+
 #ifndef S4E_USE_MQTT
 #define S4E_USE_MQTT            1
 #endif
+
 #ifndef S4E_USE_WEB_SERVER
 #define S4E_USE_WEB_SERVER      0
 #endif
+
 #ifndef S4E_USE_FAULT_HANDLER
 #define S4E_USE_FAULT_HANDLER   1
 #endif
-#if S4E_USE_WEB_SERVER == 1 || S4E_USE_MQTT  == 1
+
+#if S4E_USE_WEB_SERVER != 0 || S4E_USE_MQTT  != 0
 #define S4E_USE_ETHERNET		1
 #else
 #define S4E_USE_ETHERNET		0
 #endif
+
 #define SSID_KEY						"ssid"
 #define SSID_VALUE						"ROR194"
 #define APP_NAME_KEY					"appName"

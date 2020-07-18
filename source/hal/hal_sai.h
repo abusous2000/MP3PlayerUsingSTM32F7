@@ -6,7 +6,10 @@
  */
 #ifndef HAL_SAI_H
 #define HAL_SAI_H
+#include "ch.h"
 #include "hal.h"
+
+#ifndef STM32F407xx
 #define STM32_SAI_USE_SAI_BLOCK_A			1
 
 #ifdef BOARD_ST_STM32F769I_DISCOVERY
@@ -83,5 +86,10 @@ void sai_lld_start(SAIDriver *saip);
 void saiStartExchange(SAIDriver *saip);
 void sai_lld_start_exchange(SAIDriver *saip);
 void saiStartExchange(SAIDriver *saip);
+void saiStopExchange(SAIDriver *saip);
 extern SAIDriver SAID;
+
 #endif
+
+
+#endif /* HAL_SAI_H */

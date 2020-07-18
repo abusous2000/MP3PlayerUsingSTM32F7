@@ -90,20 +90,12 @@ MCU  = cortex-m7
 
 # Imported source files and paths.
 CHIBIOS  := ../../..
-CHIBIOS_CONTRIB  :=/home/abusous2000/Downloads/Temp/ChibiOS-Contrib
-GFXLIB = /home/abusous2000/ChibiOS_20.3.0/ext/ugfx-2.7
 GFXBOARD = STM32F769i-Discovery
 STMHAL = STM32F7xx_HAL_Driver
-CONFDIR  := ./cfg/stm32f769i_discovery
-BUILDDIR := ./build/stm32f769i_discovery
-DEPDIR   := ./.dep/stm32f769i_discovery
-STRUTS4EMBEDDED=../Struts4Embedded/source/Struts4Embedded
-CONTROLS :=../Struts4Embedded/source/Controls
-MQTTCLIENT := ../Struts4Embedded/source/MQTTClient
-#To define macros (selective chprintf) add the following plus defining in your main.c the following var BaseSequentialStream *GlobalDebugChannel = (BaseSequentialStream *)&PORTAB_SD;
-CH_CUMMUNITY := ../../../community/os/various/
+BOARD_NAME  := stm32f769i_discovery
+STRUTS4EMBEDDED :=$(CHIBIOS)/demos/STM32/Struts4Embedded/source/Struts4Embedded
+include $(STRUTS4EMBEDDED)/CommonS4EVars.mk
 
-ALLINC  += $(CH_CUMMUNITY)
 
 
 # Licensing files.

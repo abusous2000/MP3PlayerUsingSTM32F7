@@ -4,8 +4,11 @@
  *  Created on: Jul 21, 2019
  *      Author: abusous2000
  */
-
+#include "ch.h"
+#include "hal.h"
 #include "hal_sai.h"
+
+#ifndef STM32F407xx
 
 #if STM32_SAI_USE_SAI_BLOCK_A >0
 SAIDriver SAID;
@@ -90,10 +93,14 @@ void saiStop(SAIDriver *saip){
 	saiObjectInit(saip);
 	chSysUnlock();
 }
+
 void sai_lld_stop_exchange(SAIDriver *saip) {
 
   /* Stop transfer.*/
   saip->saiBlock->IMR &=  ~SAI_xIMR_WCKCFGIE;
+}
+void saiStopExchange(SAIDriver *saip){
+	sai_lld_stop_exchange(saip);
 }
 void sai_lld_start(SAIDriver *saip) {
 	  /* If in stopped state then enables the SAI and DMA clocks.*/
@@ -155,4 +162,4 @@ void sai_lld_start_exchange(SAIDriver *saip) {
   /* Starting transfer.*/
   saip->saiBlock->IMR |=  SAI_xIMR_WCKCFGIE;
 }
-
+#endif

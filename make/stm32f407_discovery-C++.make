@@ -13,7 +13,7 @@ ifeq ($(USE_COPT),)
   USE_COPT = -DWOLFSSL_USER_SETTINGS -DLWIP_DEBUG
 endif
 
-# C++ specific options here (added to USE_OPT).-fno-exceptions 
+# C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
   USE_CPPOPT = -std=gnu++11 -fno-rtti
 endif
@@ -53,9 +53,9 @@ endif
 #
 
 # Stack size to be allocated to the Cortex-M process stack. This stack is
-# the stack used by the main() thread.Max. 0x2000
+# the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x800
+  USE_PROCESS_STACKSIZE = 0x1000
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
@@ -71,7 +71,7 @@ endif
 
 # FPU-related options.
 ifeq ($(USE_FPU_OPT),)
-  USE_FPU_OPT = -mfloat-abi=$(USE_FPU) -mfpu=fpv5-sp-d16
+  USE_FPU_OPT = -mfloat-abi=$(USE_FPU) -mfpu=fpv4-sp-d16
 endif
 
 #
@@ -86,24 +86,22 @@ endif
 PROJECT = ch
 
 # Target settings.
-MCU  = cortex-m7
+MCU  = cortex-m4
 
 # Imported source files and paths.
 CHIBIOS  := ../../..
-GFXBOARD = STM32F746-Discovery
-STMHAL = STM32F7xx_HAL_Driver
-BOARD_NAME  := stm32f746_discovery
+BOARD_NAME := stm32f407_discovery
 STRUTS4EMBEDDED :=$(CHIBIOS)/demos/STM32/Struts4Embedded/source/Struts4Embedded
 include $(STRUTS4EMBEDDED)/CommonS4EVars.mk
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
 # Startup files.
-include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f7xx.mk
+include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/hal/ports/STM32/STM32F7xx/platform.mk
-include $(CHIBIOS)/os/hal/boards/ST_STM32F746G_DISCOVERY/board.mk
+include $(CHIBIOS)/os/hal/ports/STM32/STM32F4xx/platform.mk
+include $(CHIBIOS)/os/hal/boards/ST_STM32F4_DISCOVERY/board.mk
 include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -111,29 +109,27 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 # Auto-build files in ./source recursively.
 include $(CHIBIOS)/tools/mk/autobuild.mk
 # Other files (optional).
-##include $(CHIBIOS)/test/lib/test.mk
+#include $(CHIBIOS)/test/lib/test.mk
 #include $(CHIBIOS)/test/rt/rt_test.mk
 #include $(CHIBIOS)/test/oslib/oslib_test.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS_CONTRIB)/os/common/ports/ARMCMx/compilers/GCC/utils/fault_handlers_v7m.mk
-#STARTUPLD = /os/common/startup/ARMCMx/compilers/GCC/ld
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
+#STARTUPLD = /os/common/startup/ARMCMx/compilers/GCC/ld
 include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
-include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(STRUTS4EMBEDDED)/Struts4Embedded.mk
 include $(MQTTCLIENT)/MQTTClient.mk
 include $(CONTROLS)/Controls.mk
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include ./libmad/mp3.mk
-include $(GFXLIB)/gfx.mk
-# Define linker script file here
-LDSCRIPT= $(STARTUPLD)/STM32F746xG-C++.ld
-#LDSCRIPT= $(STARTUPLD)/STM32F746xG_MAX.ld
+include $(USBCFG)/usbcfg.mk
+#STARTUPLD = /os/common/startup/ARMCMx/compilers/GCC/ld
+LDSCRIPT= $(STARTUPLD)/STM32F407xG-C++.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CSRC = $(ALLCSRC) \
-       $(CHIBIOS)/os/various/evtimer.c \
-       $(GFXSRC)
+       $(CHIBIOS)/os/various/evtimer.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
