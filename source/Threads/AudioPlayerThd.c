@@ -8,6 +8,9 @@
 #define ERR_MSG_UNABLE_TO_INIT_CODEC    "****ERROR: Unable to Init Codec\r\n"
 #define ERR_MSG_INAVLID_DEVICE_ID       "****ERROR: Invalid Codec Device ID\r\n"
 
+#if HAL_USE_RTC != 0
+static AudioFileInfo_TypeDef savedInBackupAudioFileInfo PLACE_IN_RAM_SECTION(CCM_RAM_SECTION)  = {0};
+#endif
 extern AudioPlayerDriverITF_Typedef	*pAudioPlayerDriverITF;
 thread_t                        	*libMadThd;
 static thread_reference_t   playerThdRef = NULL;
@@ -20,21 +23,43 @@ static void sendErrorAndSuspendThd(char *errorMsg){
 	  chSysUnlock();
 
 }
+bool containsChar(char *str, char c, int max){
+	for(int i = 0; i < max; ++i){
+		if ( *str == c )
+			return true;
+		else
+			++str;
+	}
+
+	return false;
+}
 static THD_WORKING_AREA(waAudioPlayerThd, AUDIO_THD_WA_STACK_SIZE);// Min. WA is 0x2000 for libmad to work, else it will crash
 static THD_FUNCTION(AudioPlayerThd, arg) {(void)arg;
+  bool 			fromSleepMode = false;
   chRegSetThreadName("AudioPlayerThd");
   CodecDriverITF_Typedef        *pCodecDriverITF = pAudioPlayerDriverITF->pCodecDriverITF;
   SDCardDriverITF_Typedef  	    *pSDCardDriverITF= pAudioPlayerDriverITF->pSDCardDriverITF;
 
   libMadThd=chThdGetSelfX();
   pSDCardDriverITF->init(pSDCardDriverITF);
-  if(0 != pCodecDriverITF->Init(AUDIO_I2C_ADDRESS, OUTPUT_DEVICE_HEADPHONE, DEFAULT_VOLUME, AUDIO_FREQUENCY_192K))
+  if(0 != pCodecDriverITF->Init(AUDIO_I2C_ADDRESS, OUTPUT_DEVICE_HEADPHONE, getCurrentVolume(), AUDIO_FREQUENCY_192K))
 	  sendErrorAndSuspendThd(ERR_MSG_UNABLE_TO_INIT_CODEC);
   uint32_t deviceID = pCodecDriverITF->ReadID(AUDIO_I2C_ADDRESS);
   if ( CODEC_DEVISE_ADDRESS != deviceID )
 	  sendErrorAndSuspendThd(ERR_MSG_INAVLID_DEVICE_ID);
 
   pCodecDriverITF->Play(AUDIO_I2C_ADDRESS,NULL,0);
+#if HAL_USE_RTC != 0
+  AudioFileInfo_TypeDef *pSavedInBackupAudioFileInfo = &savedInBackupAudioFileInfo;
+  if ( //getRTCSystemWakeup() &&
+	   containsChar(savedInBackupAudioFileInfo.trackKey,0,TRACK_KEY_MAX_SIZE) ){
+	  fromSleepMode = true;
+	  pAudioPlayerDriverITF->actionEventEnum = REPOSITION_ITERATOR;
+	  strlcpy(pAudioPlayerDriverITF->repositionToTrack,savedInBackupAudioFileInfo.trackKey,TRACK_KEY_MAX_SIZE);
+	  dbgprintf("++++On restart/waking up...Skipping to track:%s++++\r\n", pAudioPlayerDriverITF->repositionToTrack);
+
+  }
+#endif
   while(true){
       FRESULT err = pSDCardDriverITF->mount(pSDCardDriverITF);
       while(err == FR_OK){
@@ -50,8 +75,12 @@ static THD_FUNCTION(AudioPlayerThd, arg) {(void)arg;
         	    sendJSONTracksDropdown();
 				#endif
     	    	while(err == FR_OK && (candidate = emlist_iterator_next(&iterator)) != NULL) {
-
-        	    	err=playAudioFile((AudioFileInfo_TypeDef*)candidate->value);
+					#if HAL_USE_RTC != 0
+    	    		savedInBackupAudioFileInfo = *(AudioFileInfo_TypeDef*)candidate->value;
+					#endif
+    	    		if ( !fromSleepMode)
+    	    			err=playAudioFile((AudioFileInfo_TypeDef*)candidate->value);
+    	            fromSleepMode = false;
         	    	if ( err != FR_OK)
         	    		break;
         	    	//If prev. track was asked for; just reposition the iterator
@@ -71,6 +100,7 @@ static THD_FUNCTION(AudioPlayerThd, arg) {(void)arg;
         	    	}
          	    }
           }
+
           chThdSleepMilliseconds(1550);
       }
       pSDCardDriverITF->disconnect(pSDCardDriverITF);
@@ -82,7 +112,12 @@ static THD_FUNCTION(AudioPlayerThd, arg) {(void)arg;
       }
    }
 }
-
+void audioPlayerPrepareGoingToSleep(void){
+#if HAL_USE_RTC != 0
+	if (  pAudioPlayerDriverITF->pAudioFileInfo != NULL )
+		savedInBackupAudioFileInfo.totalSecondsPlayed = pAudioPlayerDriverITF->pAudioFileInfo->totalSecondsPlayed;
+#endif
+}
 void initAudioPlayerThd(void){
 //   chThdCreateFromHeap(NULL,THD_WORKING_AREA_SIZE(0x2000),"AudioPlayerThd",  NORMALPRIO+10,    AudioPlayerThd, NULL);
 //   void *wsp = chHeapAllocAligned(NULL, THD_WORKING_AREA_SIZE(0x3000), PORT_WORKING_AREA_ALIGN);

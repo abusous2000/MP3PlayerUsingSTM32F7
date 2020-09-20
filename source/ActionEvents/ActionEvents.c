@@ -6,10 +6,17 @@
 #include "audio.h"
 #include "gui.h"
 #include "P9813_RGB_Driver.h"
+#include "PPMFrameDecoder.h"
+#include "EByteLora.h"
+
 
 static int8_t 			  						mute 	   			= AUDIO_MUTE_OFF;
 static int8_t                                   pause               = 0;
+#if HAL_USE_RTC != 0
+static int8_t 		  							volume  PLACE_IN_RAM_SECTION(CCM_RAM_SECTION)   			= DEFAULT_VOLUME;
+#else
 static int8_t 		  							volume     			= DEFAULT_VOLUME;
+#endif
 extern AudioPlayerDriverITF_Typedef				*pAudioPlayerDriverITF;
 
 int8_t getCurrentVolume(void){
@@ -20,6 +27,34 @@ int8_t getCurrentMute(void){
 }
 #define PLAYER_CURRENTLY_MUTE  		(mute == 1)
 #define PLAYER_CURRENTLY_NOT_MUTE   (mute == 0)
+
+#if S4E_USE_EBYTE_LORA != 0
+void eByteProcessReceivedMsg(EByteLoRaFrame_TypeDef	*pEByteLoRaFrame, MyMessage_TypeDef *pMyPayload){
+  	dbgprintf("+++FrameID:%d\tHostID:%d\tAddH:%d\tAddL:%d\tChannel:%d\tMsgTypeId:%d\tVolume:%d\tButtons:%d\r\n",
+  			  pEByteLoRaFrame->frameID,  	pEByteLoRaFrame->hostID,     pEByteLoRaFrame->fromAddressHigh, 	pEByteLoRaFrame->fromAddressLow,
+			  pEByteLoRaFrame->fromChannel, pEByteLoRaFrame->msgTypeID,  pMyPayload->volume,          		pMyPayload->buttons);
+  	if ( pMyPayload->volume )
+			triggerActionEvent(SET_VOLUME_AE_NAME,NULL,pMyPayload->volume,SOURCE_EVENT_LORA);
+  	if ( pMyPayload->buttons ){
+  	 	if ( pMyPayload->buttons & 0b1)
+  			triggerActionEvent(TOGGLE_MUTE_AE_NAME,NULL,pMyPayload->buttons,SOURCE_EVENT_LORA);
+  	  	else
+  		if ( pMyPayload->buttons & 0b10)
+  			triggerActionEvent(TOGGLE_PAUSE_AE_NAME,NULL,pMyPayload->buttons,SOURCE_EVENT_LORA);
+  	  	else
+  		if ( pMyPayload->buttons & 0b100)
+  			triggerActionEvent(NEXT_TRACK_AE_NAME,NULL,pMyPayload->buttons,SOURCE_EVENT_LORA);
+  	  	else
+  		if ( pMyPayload->buttons & 0b100)
+  			triggerActionEvent(PREV_TRACK_AE_NAME,NULL,pMyPayload->buttons,SOURCE_EVENT_LORA);
+  	}
+
+  	eByteSendAckMsg(pEByteLoRaFrame);
+
+	return;
+}
+#endif
+
 static int32_t toggleMute(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
 	bool ignore = false;
 	if ( pActionEvent!= NULL && pActionEvent->u.data > 0){
@@ -53,6 +88,8 @@ static int32_t toggleMute(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent
 #define SLEEP_MS_AFTER_TOGGLING_PAUSE    2
 static int32_t togglePausePlay(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
   getHeapUsageInfo();
+  dbgprintf("Hard Rest(0)/Wakeup(2):%d\t%d\r\n", getRTCSystemWakeup(), (int32_t)(PWR->CSR1 & PWR_CSR1_SBF) );
+
   bool ignore = false;
   if ( pActionEvent != NULL && pActionEvent->u.data > 0){
 	  if ( PLAYER_CURRENTLY_PAUSING ){
@@ -100,7 +137,7 @@ static int32_t setVolume(ActionEvent_Typedef   *pActionEvent){(void)pActionEvent
       dbgprintf("Vol Down I2C Failed\r\n");
    volume = newVolume;
    #if USE_LCD_TFT != 0
-   if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_MQTT) == 0 )
+   if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_LCD) != 0 )
 		slideVolumeSet(volume);
    #endif
    return MSG_OK;
@@ -109,6 +146,10 @@ static int32_t setVolume(ActionEvent_Typedef   *pActionEvent){(void)pActionEvent
 static int32_t volumeDown(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
    volume -= 5;
    volume = volume <= 5 ? DEFAULT_VOLUME : volume;
+#if USE_LCD_TFT != 0
+if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_LCD) != 0 )
+		slideVolumeSet(volume);
+#endif
    if (pAudioPlayerDriverITF->pCodecDriverITF->SetVolume(AUDIO_I2C_ADDRESS,volume))
        dbgprintf("Vol Down I2C Failed\r\n");
    return MSG_OK;
@@ -116,6 +157,10 @@ static int32_t volumeDown(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent
 static int32_t volumeUp(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
    volume += 5;
    volume = volume >100 ? 90 : volume;
+   #if USE_LCD_TFT != 0
+   if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_LCD) != 0 )
+		slideVolumeSet(volume);
+   #endif
    if (pAudioPlayerDriverITF->pCodecDriverITF->SetVolume(AUDIO_I2C_ADDRESS,volume))
        dbgprintf("Vol Up I2C Failed\r\n");
 
@@ -154,9 +199,18 @@ static int32_t prevTrack(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
 
    return MSG_OK;
 }
+
 int32_t repositionToTrack(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
+   //if dirty, cleanse 1st
    if ( pActionEvent->u.pData != NULL && pActionEvent->u.pData[0] != 0){
-	   AudioFileInfo_TypeDef   *pAudioFileInfo = (AudioFileInfo_TypeDef*)emlist_iterate_over(pAudioPlayerDriverITF->audioFileList,findAudioFileInfoByTrackKey,(void*)pActionEvent->u.pData);
+	    if ( pActionEvent->u.pData[0] == '[' && pActionEvent->u.pData[1] == '"'){
+	    	removeChar(pActionEvent->u.pData,'"' );
+	    	removeChar(pActionEvent->u.pData,'[' );
+	    	removeChar(pActionEvent->u.pData,']' );
+	    }
+
+	   AudioFileInfo_TypeDef   *pAudioFileInfo = (AudioFileInfo_TypeDef*)emlist_iterate_over(pAudioPlayerDriverITF->audioFileList,
+			                                                                                 findAudioFileInfoByTrackKey,(void*)pActionEvent->u.pData);
 	   if ( pAudioFileInfo != NULL){
 		   if ( IS_PAUSING(pAudioPlayerDriverITF) && pAudioPlayerDriverITF->playerThdRef != NULL ){
 		       togglePausePlay(pActionEvent);
@@ -199,6 +253,32 @@ int32_t setRGBLED(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
 #endif
    return MSG_OK;
 }
+#if PPM_FRAME_DECODER != 0
+void onChannelPPMValueChange (uint8_t ch, uint8_t currentValue, uint8_t newValue){
+	ButtonStats_Typedef buttonStatus;
+
+	dbgprintf("OnChangeChannelValue: %d\t%d\t%d\r\n", ch, currentValue, newValue);
+	switch(ch){
+		case RC_CH3:{
+			uint8_t vol =100 *(newValue-RC_MIN_VALUE) /(RC_MAX_VALUE - RC_MIN_VALUE);
+			triggerActionEvent(SET_VOLUME_AE_NAME,NULL,vol,SOURCE_EVENT_RC);
+		}
+		break;
+		case RC_SWA:
+			buttonStatus = getRCButtonStatus(newValue);
+			if ( buttonStatus != BUTTON_STATE_UNKNOWN)
+				triggerActionEvent(TOGGLE_MUTE_AE_NAME,NULL,buttonStatus,SOURCE_EVENT_RC);
+			break;
+		case RC_SWB:
+			buttonStatus = getRCButtonStatus(newValue);
+			if ( buttonStatus != BUTTON_STATE_UNKNOWN)
+				triggerActionEvent(TOGGLE_PAUSE_AE_NAME,NULL,buttonStatus,SOURCE_EVENT_RC);
+			break;
+	}
+
+}
+#endif
+
 static int32_t loadSysProperties(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
 #if S4E_USE_WIFI_MODULE_THD != 0
 	sendGetPropertiesMsgToWifiModule(PROPERTIES_HOST,PROPERTIES_URL,PROPERTIES_FP);
@@ -228,6 +308,28 @@ static int32_t performanceInfo(ActionEvent_Typedef 	*pActionEvent){(void)pAction
 
    return MSG_OK;
 }
+static int32_t setUnixtime(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
+	#if HAL_USE_RTC != 0
+	if ( pActionEvent->u.pData != NULL){
+		rtcSetTimeUnixSecFromString(pActionEvent->u.pData);
+		dbgprintf("New RTC Date:%s", rtcGetTimeAsString());
+	}
+	#endif
+
+   return MSG_OK;
+}
+void updateUI(AudioPlayerDriverITF_Typedef *pAudioPlayerDriver);
+static int32_t goToSleep(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
+	#if HAL_USE_RTC != 0
+	pAudioPlayerDriverITF->state = AP_SLEEPING;
+	updateUI(pAudioPlayerDriverITF);
+	chThdSleepMilliseconds(10);
+
+	rtcGoToSleep();
+	#endif
+
+   return MSG_OK;
+}
 static ActionEvent_Typedef actionEventToggleMute 	 	= {.name=TOGGLE_MUTE_AE_NAME,  			.eventSource="Center",      	.action=toggleMute, 	   .view=toggleMuteView,		.dataType = INT_DTYPE};
 static ActionEvent_Typedef actionEventNextTrack  	 	= {.name=NEXT_TRACK_AE_NAME,			.eventSource="Up",          	.action=nextTrack,         .view=toggleMuteView,		.dataType = INT_DTYPE};
 static ActionEvent_Typedef actionEventPrevTrack  	 	= {.name=PREV_TRACK_AE_NAME,			.eventSource=SOURCE_EVENT_MQTT,	.action=prevTrack,         .view=toggleMuteView,		.dataType = INT_DTYPE};
@@ -241,6 +343,9 @@ static ActionEvent_Typedef actionEventLoadSysProperties = {.name=LOAD_SYS_PROPER
 static ActionEvent_Typedef actionEventSetRGBLED         = {.name=SET_RGB_LED_AE_NAME,			.eventSource=SOURCE_EVENT_MQTT, .action=setRGBLED, 			.view=setRGBLEDView,		.dataType = INT_DTYPE};
 static ActionEvent_Typedef actionEventNewHTMLLoaded	 	= {.name=NEW_HTML_LOADED_AE_NAME,  		.eventSource=SOURCE_EVENT_MQTT, .action=newHTMLLoaded, 	    .view=NULL,				    .dataType = INT_DTYPE};
 static ActionEvent_Typedef actionEventPerformanceInfo 	= {.name=PERFORMANCE_INFO_AE_NAME,  	.eventSource=SOURCE_EVENT_MQTT, .action=performanceInfo, 	.view=NULL,				    .dataType = INT_DTYPE};
+static ActionEvent_Typedef actionEventSetUnixtime      	= {.name=SET_UNIX_TIME_AE_NAME,			.eventSource="WiFi",   		    .action=setUnixtime, 		.view=NULL,			        .dataType = CHAR_DTYPE};
+static ActionEvent_Typedef actionEventGoToSleep      	= {.name=GO_TO_SLEEP_AE_NAME,			.eventSource="WiFi",   		    .action=goToSleep, 		    .view=NULL,			        .dataType = INT_DTYPE};
+
 ActionEvent_Typedef *gActionEvents[MAX_ACTION_EVENTS] = {&actionEventToggleMute,
 		                                                 &actionEventNextTrack,
 														 &actionEventPrevTrack,
@@ -253,4 +358,6 @@ ActionEvent_Typedef *gActionEvents[MAX_ACTION_EVENTS] = {&actionEventToggleMute,
                                                          &actionEventLoadSysProperties,
 														 &actionEventSetRGBLED,
 														 &actionEventNewHTMLLoaded,
-														 &actionEventPerformanceInfo};
+														 &actionEventPerformanceInfo,
+														 &actionEventSetUnixtime,
+														 &actionEventGoToSleep};

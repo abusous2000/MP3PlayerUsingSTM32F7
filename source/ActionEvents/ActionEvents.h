@@ -17,6 +17,8 @@
 #define NEW_HTML_LOADED_AE_NAME				"newHTMLLoaded"
 #define NEW_HTML_LOADED_AE_NAME				"newHTMLLoaded"
 #define PERFORMANCE_INFO_AE_NAME			"performanceInfo"
+#define SET_UNIX_TIME_AE_NAME				"setUnixtime"
+#define GO_TO_SLEEP_AE_NAME                 "goToSleep"
 
 #define PAUSE_PLAYER_NOW    				2
 #define UNPAUSE_PLAYER_NOW    				3

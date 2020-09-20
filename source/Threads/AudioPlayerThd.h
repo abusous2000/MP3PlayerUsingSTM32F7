@@ -9,6 +9,7 @@
  extern "C" {
 #endif
 void initAudioPlayerThd(void);
+void audioPlayerPrepareGoingToSleep(void);
 #ifdef __cplusplus
 }
 #endif

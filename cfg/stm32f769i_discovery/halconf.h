@@ -102,7 +102,7 @@
  * @brief   Enables the ICU subsystem.
  */
 #if !defined(HAL_USE_ICU) || defined(__DOXYGEN__)
-#define HAL_USE_ICU                         FALSE
+#define HAL_USE_ICU                         TRUE
 #endif
 
 /**
@@ -130,7 +130,7 @@
  * @brief   Enables the RTC subsystem.
  */
 #if !defined(HAL_USE_RTC) || defined(__DOXYGEN__)
-#define HAL_USE_RTC                         FALSE
+#define HAL_USE_RTC                         TRUE
 #endif
 
 /**

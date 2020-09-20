@@ -24,6 +24,7 @@
 #define TRACK_LABEL_GH_NDX 			9
 #define TRACK_GH_NDX 	  			10
 #define APP_LABLE_GH_NDX 	  		11
+#define TOOGLE_SLEEP_GH_NDX 	 	12
 #define CONSOLE_GH_NDX 	  			20
 //
 //// GListeners
@@ -58,6 +59,7 @@
 #ifdef __cplusplus
  extern "C" {
 #endif
+void turnOffLCD(void);
 void selectTrackInDropdownList(char *trackKey);
 void checkboxMute(bool check);
 void checkboxPause(bool check);

@@ -140,7 +140,8 @@
    AP_PLAYING           = 1,
    AP_SKIPPING          = 2,
    AP_PLAYING_AND_MUTE  = 3,
-   AP_PAUSING           = 4
+   AP_PAUSING           = 4,
+   AP_SLEEPING          = 5
  };
  enum ActionEventEnum {
    PLAY_AUDIO        = 0,

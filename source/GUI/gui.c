@@ -5,7 +5,7 @@
 /******************************************************************************/
 
 #include "Strust4EmbeddedConf.h"
-#if USE_LCD_TFT
+#if USE_LCD_TFT != 0
 #include "Strust4Embedded.h"
 #include "audio.h"
 #include "colors.h"
@@ -220,6 +220,15 @@ static void createPagePage0(void){
 	wi.g.parent = gHandles[CONTAINER1_GH_NDX];
 	gHandles[TOOGLE_MUTE_GH_NDX] = gwinCheckboxCreate(0, &wi);
 
+	gwinWidgetClearInit(&wi);
+    wi.g.x = 235;
+    wi.g.y = yOffset;
+	wi.g.width = 110;
+	wi.g.height = 30;
+	wi.text = " Sleep";
+	wi.g.show = TRUE;
+	wi.g.parent = gHandles[CONTAINER1_GH_NDX];
+	gHandles[TOOGLE_SLEEP_GH_NDX] = gwinCheckboxCreate(0, &wi);
 
 	yOffset +=wi.g.height + 5;
 	gwinWidgetClearInit(&wi);
@@ -284,6 +293,7 @@ void guiCreate(void){
 static ActionEvent_Typedef 		*pSetVolumeAE 			= NULL;
 static ActionEvent_Typedef 		*pTogglePauseAE			= NULL;
 static ActionEvent_Typedef 		*pToggleMuteAE			= NULL;
+static ActionEvent_Typedef 		*pToggleSleepAE			= NULL;
 static ActionEvent_Typedef 		*pNextTrackAE			= NULL;
 static ActionEvent_Typedef 		*pPrevTrackAE			= NULL;
 static ActionEvent_Typedef 		*pRepositionToTrackAE	= NULL;
@@ -325,7 +335,6 @@ void checkboxMute(bool check){
 void slideVolumeSet(uint8_t vol){
 	gwinSliderSetPosition(gHandles[VOLUME_GH_NDX],vol);
 }
-
 uint8_t handleCheckboxClicks(GEvent  *pe){
 	GEventGWinCheckbox *cbe = (GEventGWinCheckbox*)pe;
 
@@ -346,6 +355,10 @@ uint8_t handleCheckboxClicks(GEvent  *pe){
 		if ( (playerCurrentlyPlaying && muteRequested) ||
 			 (playerCurrentlyMute && !muteRequested))
 			triggerActionEvent(pToggleMuteAE->name, NULL, cbe->isChecked?MUTE_PLAYER_NOW:UNMUTE_PLAYER_NOW, SOURCE_EVENT_LCD);
+	}
+	else
+	if ( cbe->gwin == gHandles[TOOGLE_SLEEP_GH_NDX]){
+		triggerActionEvent(pToggleSleepAE->name, NULL, true, SOURCE_EVENT_LCD);
 	}
 	return true;
 }
@@ -394,7 +407,20 @@ uint8_t trackSelected(GEvent  *pe){
 
     return true;
 }
+void turnOffLCD(void){
+	#ifdef BOARD_ST_STM32F769I_DISCOVERY
+	BSP_LCD_Reset();
+	#endif
+	#ifdef BOARD_ST_STM32F746G_DISCOVERY
+	//It seems that R85 has to be removed to turn off screen
+	//https://ask.embedded-wizard.de/3857/white-screen-flashing-at-the-switch-on
+	//As is we get a white screen for some reason
+	gdispClear(Black);
+	palClearPad(GPIOK, GPIOK_LCD_BL_CTRL);
+    palClearPad(GPIOI, GPIOI_LCD_DISP);
+    #endif
 
+}
 void inituGFXGUI(void *arg){(void)arg;
 	gfxInit();
 
@@ -405,6 +431,7 @@ void inituGFXGUI(void *arg){(void)arg;
 	pSetVolumeAE   		= getActionEvent(SET_VOLUME_AE_NAME);
 	pTogglePauseAE 		= getActionEvent(TOGGLE_PAUSE_AE_NAME);
 	pToggleMuteAE  		= getActionEvent(TOGGLE_MUTE_AE_NAME);
+	pToggleSleepAE  	= getActionEvent(GO_TO_SLEEP_AE_NAME);
 	pNextTrackAE   		= getActionEvent(NEXT_TRACK_AE_NAME);
 	pPrevTrackAE   		= getActionEvent(PREV_TRACK_AE_NAME);
 	pRepositionToTrackAE= getActionEvent(REPOSITION_TO_TRACK_AE_NAME);
@@ -413,6 +440,7 @@ void inituGFXGUI(void *arg){(void)arg;
 	gHandles[VOLUME_GH_NDX]->onEventCB 			= changeVolume;
 	gHandles[TOOGLE_PAUSE_GH_NDX]->onEventCB 	= handleCheckboxClicks;
 	gHandles[TOOGLE_MUTE_GH_NDX]->onEventCB 	= handleCheckboxClicks;
+	gHandles[TOOGLE_SLEEP_GH_NDX]->onEventCB 	= handleCheckboxClicks;
 	gHandles[NEXT_TRACK_GH_NDX]->onEventCB 		= handleButtonClicks;
 	gHandles[PREV_TRACK_GH_NDX]->onEventCB 		= handleButtonClicks;
 	gHandles[TRACKS_LIST_GH_NDX]->onEventCB 	= trackSelected;

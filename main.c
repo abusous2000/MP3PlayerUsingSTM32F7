@@ -9,7 +9,11 @@
 #include "MQTTClient.h"
 #include "audio.h"
 #include "AudioPlayerThd.h"
+#include "PPMFrameDecoder.h"
+#include "EByteLora.h"
+#include "gui.h"
 #include "uGFXThread.h"
+#include "IRReceiver.h"
 #include "ccportab.h"
 
 #ifdef USE_USBCFG
@@ -71,6 +75,7 @@ int main(void) {
   initMQTTClient();
 #endif
   initDrivers();
+
   initActonEventThd();
   initButtonsLEDs();
 #if S4E_USE_WIFI_MODULE_THD != 0
@@ -86,9 +91,24 @@ int main(void) {
 #if USE_LCD_TFT
   inituGFXThd();
 #endif
+#if S4E_USE_EBYTE_LORA != 0
+  initEByteLoraThread();
+#endif
+
+#if PPM_FRAME_DECODER != 0
+ initPPMFrameDecoder();
+#endif
+
+#if S4E_USE_IR_RECEIVER != 0
+  initIRReeceiver();
+#endif
 
   while (true) {
-	    chThdSleepMilliseconds(2500);
+	  chThdSleepMilliseconds(1500);
+	  #if S4E_USE_MQTT != 0
+	  if ( !isDefaultMQTTBrokerConnected() )
+		  reconnectDefaultMQTTBroker();
+	  #endif
   }
 }
 static NameValuePairStaticTypeDef readFilesFromFolder=  {.key=READ_FILES_FROM_FOLDER,	.value="/music"};
@@ -104,6 +124,8 @@ static void initDrivers(void){
 #if S4E_USE_SSD1306_LCD != 0
   ssd130InitAndConfig("MP3Player w/ STM32F7");
 #endif
+
+  return;
 }
 static bool pauseMsgSent = false;
 void updateUI(AudioPlayerDriverITF_Typedef *pAudioPlayerDriver){
@@ -140,6 +162,7 @@ void updateUI(AudioPlayerDriverITF_Typedef *pAudioPlayerDriver){
     #endif
   }
 
+  return;
 }
 
 //This is a weak/virtual method that overrides the default in the BlinkerThd.c file, see for details
@@ -157,7 +180,16 @@ void periodicSysTrigger(uint32_t i){
 
   return;
 }
-
+#if HAL_USE_RTC != 0
+void onRTCSleep(void){
+	dbgprintf("Going sleep in 10ms...:goingToSleepCnt:%d\r\n",getGoingToSleepCnt());
+	audioPlayerPrepareGoingToSleep();
+	#if USE_LCD_TFT != 0
+	turnOffLCD();
+	#endif
+    chThdSleepMilliseconds(10);
+}
+#endif
 #ifdef USE_USBCFG
 static void initUSBCFG(void){
 	/* Configuring PG14 as AF8 assigning it to USART6_TX. */
@@ -177,5 +209,157 @@ static void initUSBCFG(void){
 	usbConnectBus(serusbcfg.usbp);
 
 	sdStart(&PORTAB_SD_VCP, &myserialcfg);
+}
+#endif
+
+//overriding the default handling of IR Events
+#if S4E_USE_IR_RECEIVER != 0
+static ActionEvent_Typedef 		*pSetVolumeUpAE			= NULL;
+static ActionEvent_Typedef 		*pSetVolumeDownAE		= NULL;
+static ActionEvent_Typedef 		*pTogglePauseAE			= NULL;
+static ActionEvent_Typedef 		*pToggleMuteAE			= NULL;
+static ActionEvent_Typedef 		*pToggleSleepAE			= NULL;
+static ActionEvent_Typedef 		*pNextTrackAE			= NULL;
+static ActionEvent_Typedef 		*pPrevTrackAE			= NULL;
+static ActionEvent_Typedef 		*pRepositionToTrackAE	= NULL;
+
+static bool irInit = false;
+void handlIREvent(IR_CMD_t command, bool repeatFlag){
+	if ( !irInit){
+	  pSetVolumeUpAE   	    = getActionEvent(VOLUME_UP_AE_NAME);
+	  pSetVolumeDownAE   	= getActionEvent(VOLUME_DOWN_AE_NAME);
+	  pTogglePauseAE 		= getActionEvent(TOGGLE_PAUSE_AE_NAME);
+	  pToggleMuteAE  		= getActionEvent(TOGGLE_MUTE_AE_NAME);
+	  pToggleSleepAE  	    = getActionEvent(GO_TO_SLEEP_AE_NAME);
+	  pNextTrackAE   		= getActionEvent(NEXT_TRACK_AE_NAME);
+	  pPrevTrackAE   		= getActionEvent(PREV_TRACK_AE_NAME);
+	  irInit = true;
+	}
+
+	switch(command){
+	    case BTN_POWER:
+	       dbgprintf("PWR");
+	       if(repeatFlag)
+	         dbgprintf(" RPT");
+	       else
+	    	   triggerActionEvent(pToggleSleepAE->name, NULL, 0, SOURCE_EVENT_IR);
+	       break;
+	    case BTN_MODE:
+	      dbgprintf("MODE");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_MUTE:
+	      dbgprintf("MUTE");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      else
+	    	triggerActionEvent(pToggleMuteAE->name, NULL, 0, SOURCE_EVENT_IR);
+	      break;
+	    case BTN_PREV:
+	      dbgprintf("PREV");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      else
+	    	 triggerActionEvent(pPrevTrackAE->name, NULL, 0, SOURCE_EVENT_IR);
+	      break;
+	    case BTN_NEXT:
+	      dbgprintf("NEXT");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      else
+	    	 triggerActionEvent(pNextTrackAE->name, NULL, 0, SOURCE_EVENT_IR);
+	      break;
+	    case BTN_PLAY_PAUSE:
+	      dbgprintf("PLAY/PAUSE");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      else
+			triggerActionEvent(pTogglePauseAE->name, NULL, 0, SOURCE_EVENT_IR);
+	      break;
+	    case BTN_VOL_DOWN:
+	      dbgprintf("VOL-");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      else
+	    	 triggerActionEvent(pSetVolumeDownAE->name, NULL, 0, SOURCE_EVENT_IR);
+	      break;
+	    case BTN_VOL_UP:
+	      dbgprintf("VOL+");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      else
+	    	 triggerActionEvent(pSetVolumeUpAE->name, NULL, 0, SOURCE_EVENT_IR);
+	      break;
+	    case BTN_EQ:
+	      dbgprintf("EQ");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_0:
+	      dbgprintf("0");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_LOOP:
+	      dbgprintf("100+");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_USD:
+	      dbgprintf("200+");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_1:
+	      dbgprintf("1");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_2:
+	      dbgprintf("2");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_3:
+	      dbgprintf("3");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_4:
+	      dbgprintf("4");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_5:
+	      dbgprintf("5");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_6:
+	      dbgprintf("6");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_7:
+	      dbgprintf("7");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_8:
+	      dbgprintf("8");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    case BTN_9:
+	      dbgprintf("9");
+	      if(repeatFlag)
+	        dbgprintf(" RPT");
+	      break;
+	    default:
+	      dbgprintf("Unknown");
+	      break;
+	}
+	dbgprintf("\n\r");
 }
 #endif

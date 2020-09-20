@@ -32,7 +32,7 @@ static AudioPlayerDriverITF_Typedef  audioPlayerDriverImpl = {	.onHeaderCallback
                                                                 .errorMsg = NULL};
 
 static char const APStates[MAX_ACTION_EVENTS]        = { 'S', 'P', 'K', 'M', 'U'};
-static char const *APStatesString[MAX_ACTION_EVENTS] = { "Stopped", "Playing", "Skipping","Mute","Pausing"};
+static char const *APStatesString[MAX_ACTION_EVENTS] = { "Stopped", "Playing", "Skipping","Mute","Pausing","Sleeping"};
 uint8_t getAPStateShortName(uint8_t ndx){
   return APStates[ndx];
 }
