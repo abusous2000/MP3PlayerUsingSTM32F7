@@ -3,12 +3,16 @@
 /*                                                                            */
 /* http://ugfx.org                                                            */
 /******************************************************************************/
+#include "Strust4EmbeddedConf.h"
 
 #ifndef _S4E_GUI_H_
 #define _S4E_GUI_H_
 #if USE_LCD_TFT != 0
 #include "gfx.h"
 
+#ifndef SHOW_CONDOLE_MSGS
+#define SHOW_CONDOLE_MSGS           1
+#endif
 // Widget groups
 #define GROUP_DEFAULT				0
 #define MAX_GHANLDES 				40
@@ -65,6 +69,7 @@ void checkboxMute(bool check);
 void checkboxPause(bool check);
 void slideVolumeSet(uint8_t vol);
 void updateLCDTFTStatus(void);
+void guiAddTextToConsole(char *str);
 #ifdef __cplusplus
 }
 #endif

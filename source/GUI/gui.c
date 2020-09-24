@@ -264,6 +264,22 @@ static void createPagePage0(void){
 	gHandles[TRACKS_LIST_GH_NDX] = gwinListCreate(0, &wi, FALSE);
 	gwinListSetScroll(gHandles[TRACKS_LIST_GH_NDX], scrollSmooth);
 
+	#if SHOW_CONDOLE_MSGS != 0
+	yOffset +=wi.g.height + 10;
+	// The first list widget
+	wi.g.width = LCD_MAX_WIDTH_PLAYER;
+	wi.g.height = 50;
+	wi.g.y = yOffset;
+	wi.g.x = 5;
+	wi.text = "Console";
+	wi.g.parent = gHandles[CONTAINER1_GH_NDX];
+	gHandles[CONSOLE_GH_NDX] = gwinConsoleCreate(0 ,(const GWindowInit *)&wi);
+	#endif
+}
+void guiAddTextToConsole(char *str){
+#if SHOW_CONDOLE_MSGS != 0
+	gwinPrintf(gHandles[CONSOLE_GH_NDX], str);
+#endif
 }
 
 void guiShowPage(unsigned pageIndex){

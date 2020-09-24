@@ -27,7 +27,16 @@ int8_t getCurrentMute(void){
 }
 #define PLAYER_CURRENTLY_MUTE  		(mute == 1)
 #define PLAYER_CURRENTLY_NOT_MUTE   (mute == 0)
+static void addAEConsoleText(ActionEvent_Typedef 	*pActionEvent, char *msg){
+	char  payload[120]	= {0};
 
+	if ( msg !=NULL )
+		chsnprintf(payload,sizeof(payload),"%s--->AE:%s\tSource:%s\tData:%d\n",msg, pActionEvent->name,pActionEvent->eventSource,pActionEvent->u.data);
+	else
+		chsnprintf(payload,sizeof(payload),"AE:%s\tSource:%s\tData:%d\n",msg, pActionEvent->name,pActionEvent->eventSource,pActionEvent->u.data);
+
+	guiAddTextToConsole(payload);
+}
 #if S4E_USE_EBYTE_LORA != 0
 void eByteProcessReceivedMsg(EByteLoRaFrame_TypeDef	*pEByteLoRaFrame, MyMessage_TypeDef *pMyPayload){
   	dbgprintf("+++FrameID:%d\tHostID:%d\tAddH:%d\tAddL:%d\tChannel:%d\tMsgTypeId:%d\tVolume:%d\tButtons:%d\r\n",
@@ -78,6 +87,7 @@ static int32_t toggleMute(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent
 	pAudioPlayerDriverITF->state =  mute?AP_PLAYING_AND_MUTE:AP_PLAYING;
 
 	#if USE_LCD_TFT != 0
+	addAEConsoleText(pActionEvent,"Toggling Mute");
 	checkboxMute(mute);
 	#endif
 
@@ -124,6 +134,7 @@ static int32_t togglePausePlay(ActionEvent_Typedef 	*pActionEvent){(void)pAction
   else
       dbgprintf("***AE is ignored since player isn't playing....%d,%d\r\n",pause,pAudioPlayerDriverITF->actionEventEnum);
   #if USE_LCD_TFT!= 0
+  addAEConsoleText(pActionEvent,"Toggling Pause");
   if ( pActionEvent != NULL )
 	  checkboxPause(pause);
   #endif
@@ -137,6 +148,7 @@ static int32_t setVolume(ActionEvent_Typedef   *pActionEvent){(void)pActionEvent
       dbgprintf("Vol Down I2C Failed\r\n");
    volume = newVolume;
    #if USE_LCD_TFT != 0
+   addAEConsoleText(pActionEvent,"Set Volume");
    if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_LCD) != 0 )
 		slideVolumeSet(volume);
    #endif
@@ -147,6 +159,7 @@ static int32_t volumeDown(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent
    volume -= 5;
    volume = volume <= 5 ? DEFAULT_VOLUME : volume;
 #if USE_LCD_TFT != 0
+   addAEConsoleText(pActionEvent,"Volume Down");
 if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_LCD) != 0 )
 		slideVolumeSet(volume);
 #endif
@@ -158,6 +171,7 @@ static int32_t volumeUp(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
    volume += 5;
    volume = volume >100 ? 90 : volume;
    #if USE_LCD_TFT != 0
+   addAEConsoleText(pActionEvent,"Volume Up");
    if ( strcmp(pActionEvent->eventSource,SOURCE_EVENT_LCD) != 0 )
 		slideVolumeSet(volume);
    #endif
@@ -181,6 +195,10 @@ static int32_t nextTrack(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
    else
 	   dbgprintf("Ignoring Next track. Current State:%d\r\n",pAudioPlayerDriverITF->actionEventEnum);
 
+   #if USE_LCD_TFT != 0
+   addAEConsoleText(pActionEvent,"Next Track");
+   #endif
+
    return MSG_OK;
 }
 static int32_t prevTrack(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
@@ -196,7 +214,9 @@ static int32_t prevTrack(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
    }
    else
 	   dbgprintf("Ignoring Next track. Current State:%d\r\n",pAudioPlayerDriverITF->actionEventEnum);
-
+	#if USE_LCD_TFT != 0
+	addAEConsoleText(pActionEvent,"Prev Track");
+	#endif
    return MSG_OK;
 }
 

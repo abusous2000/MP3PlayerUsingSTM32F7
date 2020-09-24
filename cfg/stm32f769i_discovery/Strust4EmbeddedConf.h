@@ -21,7 +21,7 @@
 
 #define S4E_USE_JOYSTICK        		0
 #define S4E_USE_BLINKER_THD     		1
-#define S4E_USE_WIFI_MODULE_THD 		0
+#define S4E_USE_WIFI_MODULE_THD 		1
 
 #define S4E_USE_SSD1306_LCD     		0
 #define S4E_USE_POT             		0
