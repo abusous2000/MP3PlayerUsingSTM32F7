@@ -273,7 +273,7 @@ int32_t setRGBLED(ActionEvent_Typedef 	*pActionEvent){(void)pActionEvent;
 #endif
    return MSG_OK;
 }
-#if PPM_FRAME_DECODER != 0
+#if S4E_USE_PPM_FRAME_DECODER != 0
 void onChannelPPMValueChange (uint8_t ch, uint8_t currentValue, uint8_t newValue){
 	ButtonStats_Typedef buttonStatus;
 

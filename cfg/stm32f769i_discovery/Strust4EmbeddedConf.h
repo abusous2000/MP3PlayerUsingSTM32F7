@@ -8,6 +8,7 @@
 #ifndef CFG_STRUST4EMBEDDEDCONF_H_
 #define CFG_STRUST4EMBEDDEDCONF_H_
 
+#define S4E_USE_IR_RECEIVER				1
 //#define MAX_ACTION_EVENTS             6
 #define INCLUDE_WM8994                  1
 #define PROCESS_ACTION_EVENTS_THD_WA   	1024
@@ -25,8 +26,15 @@
 
 #define S4E_USE_SSD1306_LCD     		0
 #define S4E_USE_POT             		0
+
 #define S4E_USE_PWM             		0
+#define PWM_LINE1 		        		LINE_ARD_D0
+#define PWM_LINE2 						LINE_ARD_D1
+
 #define S4E_USE_RGB             		0
+#define LINE_IO_DATA					LINE_ARD_D5
+#define LINE_IO_CLOCK					LINE_ARD_D6
+
 #define S4E_USE_MQTT            		1
 #define S4E_USE_WEB_SERVER      		0
 #define S4E_USE_FAULT_HANDLER   		1
@@ -78,7 +86,7 @@
 #define ADC_POT                     	ADCD2
 #define ADC_CHANNEL_IN 					ADC_CHANNEL_IN6
 
-#define PPM_FRAME_DECODER				0
+#define S4E_USE_PPM_FRAME_DECODER		0
 #define PPM_DECODING_DEBUG				0
 #define FREQUENCY_USED          		50000
 #define RC_MIN_VALUE                    30
@@ -158,5 +166,4 @@
 
 #define BACKUP_CCM_RAM_SECTION 			ram5
 
-#define S4E_USE_IR_RECEIVER				1
 #endif /* CFG_STRUST4EMBEDDED_H_ */

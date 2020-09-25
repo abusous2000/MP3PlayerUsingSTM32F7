@@ -107,7 +107,7 @@
 #define TIM_TGRO_EVENT_EXTSEL 		    12 //See table 98 in RM on pages 451 & 471 for details
 #define ADC_CHANNEL_IN 					ADC_CHANNEL_IN0
 #define ADC_POT                     	ADCD3
-#define PPM_FRAME_DECODER 				0
+#define S4E_USE_PPM_FRAME_DECODER 		0
 #define S4E_USE_EBYTE_LORA              0
 
 #define GO_TO_SLEEP_MACROS      		SCB->SCR 	|= SCB_SCR_SLEEPDEEP_Msk;\

@@ -95,7 +95,7 @@ int main(void) {
   initEByteLoraThread();
 #endif
 
-#if PPM_FRAME_DECODER != 0
+#if S4E_USE_PPM_FRAME_DECODER != 0
  initPPMFrameDecoder();
 #endif
 
