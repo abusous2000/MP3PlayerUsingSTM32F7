@@ -25,16 +25,6 @@ AudioPlayerDriverITF_Typedef	*pAudioPlayerDriverITF;
 thread_t 			  		    *mainThd;
 
 static void initDrivers(void);
-#if S4E_USE_WIFI_MODULE_THD != 0
-/* WiFi Serial configuration. */
-static const SerialConfig wifiSerialvfg = {
-  WIFI_SERIALBAUD_RATE,
-  0,
-  USART_CR2_STOP1_BITS,
-  0
-};
-#endif
-
 #if HAL_USE_SERIAL != 0
 
 /* VCP Serial configuration. */
@@ -79,7 +69,6 @@ int main(void) {
   initActonEventThd();
   initButtonsLEDs();
 #if S4E_USE_WIFI_MODULE_THD != 0
-  sdStart(&WIFI_SD, &wifiSerialvfg);
   initWifiCommunicationThd();
 #endif
 #if defined(LINE_LED_RED)
@@ -125,6 +114,9 @@ static void initDrivers(void){
   ssd130InitAndConfig("MP3Player w/ STM32F7");
 #endif
 
+#if HAL_USE_RTC != 0
+    RTCInit();
+#endif
   return;
 }
 static bool pauseMsgSent = false;

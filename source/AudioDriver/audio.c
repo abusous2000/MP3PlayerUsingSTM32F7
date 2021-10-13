@@ -131,7 +131,7 @@ void AUDIO_IO_Init(void){
 	   palSetLineMode(AUDIO_I2S_MCK_LINE, AUDIO_I2S_PIN_MODE);
 
 	#else
-//	  /* I2CD_CODEC-->CODEC SCL and SDA pins configuration -------------------------------------*/
+//	  /* I2CD_CODEC-->CODEC SCL and SDA pins configuration. NOte that no need for pull-up reisters. see schematic for details-------------------------------------*/
 	  palSetLineMode(AUDIO_I2C_SCL_LINE, PAL_MODE_ALTERNATE(SAI_I2C_SCL_AF) | AUDIO_I2C_LINE_MODE);
 	  palSetLineMode(AUDIO_I2C_SDA_LINE, PAL_MODE_ALTERNATE(SAI_I2C_SDA_AF) | AUDIO_I2C_LINE_MODE);
 	  /* CODE SAI pins configuration: WS, SCK and SD pins ... See Schematic Page 41 & 42 STM32F769i User Manual.-----------------------------*/

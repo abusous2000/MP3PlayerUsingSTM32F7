@@ -31,9 +31,9 @@
 #define _CHIBIOS_RT_CONF_
 #define _CHIBIOS_RT_CONF_VER_6_1_
 #define bool_t						bool
-#define DEBUG_TRACE_PRINT     		TRUE
-#define CHPRINTF_USE_FLOAT    		TRUE
-#define PORT_ENABLE_GUARD_PAGES     TRUE
+//#define DEBUG_TRACE_PRINT     		TRUE
+//#define CHPRINTF_USE_FLOAT    		TRUE
+//#define PORT_ENABLE_GUARD_PAGES     TRUE
 /*===========================================================================*/
 /**
  * @name System timers settings
