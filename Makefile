@@ -17,8 +17,8 @@ all:
 
 clean:
 	@echo
-	+@make --no-print-directory -f make/stm32f407_discovery.make clean
-	+@make --no-print-directory -f make/stm32f746_discovery.make clean
+#	+@make --no-print-directory -f make/stm32f407_discovery.make clean
+#	+@make --no-print-directory -f make/stm32f746_discovery.make clean
 	+@make --no-print-directory -f make/stm32f769i_discovery.make clean
 	@echo
 

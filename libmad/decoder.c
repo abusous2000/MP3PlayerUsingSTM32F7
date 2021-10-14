@@ -94,7 +94,7 @@ void mad_decoder_init(struct mad_decoder *decoder, void *data,
 }
 
 int mad_decoder_finish(struct mad_decoder *decoder)
-{
+{(void)decoder;
 # if defined(USE_ASYNC)
   if (decoder->mode == MAD_DECODER_MODE_ASYNC && decoder->async.pid) {
     pid_t pid;
@@ -569,6 +569,7 @@ int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
 int mad_decoder_message(struct mad_decoder *decoder,
 			void *message, unsigned int *len)
 {
+	(void)len;(void)message;(void)decoder;
 # if defined(USE_ASYNC)
   if (decoder->mode != MAD_DECODER_MODE_ASYNC ||
       send(decoder->async.out, message, *len) != MAD_FLOW_CONTINUE ||
