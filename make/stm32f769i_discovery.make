@@ -10,7 +10,7 @@ endif
 
 # C specific options here (added to USE_OPT).
 ifeq ($(USE_COPT),)
-  USE_COPT =
+  USE_COPT = -DWOLFSSL_USER_SETTINGS -DLWIP_DEBUG
 endif
 
 # C++ specific options here (added to USE_OPT).
